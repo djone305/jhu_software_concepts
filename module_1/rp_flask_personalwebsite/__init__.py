@@ -1,6 +1,6 @@
 from flask import Flask
 
-from personalwebsite import pages
+from rp_flask_personalwebsite import pages
 
 def create_app():
     app = Flask(__name__)
