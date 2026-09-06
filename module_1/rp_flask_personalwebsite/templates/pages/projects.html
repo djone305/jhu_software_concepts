@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>{% block title %}Projects & Publications{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %}
+<div class="row my-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold mb-3">Projects</h1>
+        <p class="lead text-secondary mb-4">
+            A collection of projects completed in my Modern Concepts in Python Course Fall 2026.
+        </p>
+
+        <!-- Module 1 Project -->
+         <div class="card shadow-sm mb-4 text-start">
+            <div class="card-body">
+                <h3 class="card-title fw-bold">Module 1 Assignment: Personal Website</h3>
+                <p class="card-text text-muted mb-2"><strong>Concepts/Tools:</strong>Python, Flask, Bootstrap, Git/GitHub</p>
+                <p class="card-text">
+                    Developed and implemented a multi-page personal website utilizing Flask, incorporating skills and tools acquired throughout the course and accompanying readings. 
+                    The project leverages Bootstrap for responsive styling to highlight academic credentials, professional background, and career accomplishments.  
+                </p>
+                <a href="https://github.com/djone305/jhu_software_concepts" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary">                
+                  View Module 1 GitHub Project
+                </a>
+            </div>
+         </div>
+    </div>
+</div>
+{% endblock content %}
