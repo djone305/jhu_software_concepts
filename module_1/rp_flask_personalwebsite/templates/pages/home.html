@@ -5,7 +5,32 @@
 {% endblock header %}
 
 {% block content %}
-  <p>
-    Learn more about this project by visiting the <a href="{{ url_for('pages.about') }}">About page</a>.
-  </p>
+<div class="row align-items-center my-4">
+  <!-- Left Column: Bio Text -->
+  <div class="col-md-7 col-lg-8">
+    <h1 class="display-4 fw-bold">Donnell Jones</h1>
+    <h3 class="text-secondary mb-3">Engineering Manager/Graduate Student</h3>
+    
+    <!-- left-aligned text-->
+    <p class="lead text-start">
+      Welcome to my first personal website. I am currently taking Modern Concepts in Python.
+    </p>
+    <p p class="lead text-start">
+      Donnell Jones is an Engineering Manager at Boeing leading a team of engineers at the Houston Design Center. 
+      He is currently pursing M.S in AI from John Hopkins. 
+      He holds a B.S. in Mechanical Engieering from  Florida A&M University, a M.S. in Systems Engineering from University of Southern California, and
+      an MBA in Management from Florida Tech.
+    </p>
+    <p>
+      Check out my <a href="{{ url_for('pages.projects')}}">Projects</a> or visit my <a href="{{ url_for('pages.contact')}}">Contact Info</a> to contact me.
+    </p>
+  </div>
+
+  <!-- Right Column: Profile Image -->
+  <div class="col-md-5 col-lg-4 text-center">
+    <img src="{{ url_for('static', filename='images/profile.jpg') }}"
+         alt="Profile Picture"
+         class="img-fluid rounded shadow"
+         style="max-width: 280px; width: 100%; height: auto;">
+  </div>
 {% endblock content %}
