@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template
 
+# Initialize the Blueprint for main page routing
 bp = Blueprint("pages", __name__)
 
 @bp.route("/")
