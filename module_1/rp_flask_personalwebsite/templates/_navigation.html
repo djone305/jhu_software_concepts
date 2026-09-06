@@ -1,8 +1,8 @@
-<nav>
-    <ul>
-        <li><a href="{{ url_for('pages.home') }}">Home</a></li>
-        <li><a href="{{ url_for('pages.about') }}">About</a></li>
-        <li><a href="{{ url_for('pages.contact') }}">Contact Info</a></li>
-        <li><a href="{{ url_for('pages.projects') }}">Projects</a></li>
+<nav class="d-flex justify-content-end">
+    <ul class="nav nav-pills">
+        <li><a href="{{ url_for('pages.home') }}" class="nav-link {% if request.endpoint == 'pages.home' %}active{% endif %}">Home</a></li>
+        <li><a href="{{ url_for('pages.about') }}" class="nav-link {% if request.endpoint == 'pages.about' %}active{% endif %}">About</a></li>
+        <li><a href="{{ url_for('pages.contact') }}" class="nav-link {% if request.endpoint == 'pages.contact' %}active{% endif %}">Contact Info</a></li>
+        <li><a href="{{ url_for('pages.projects') }}" class="nav-link {% if request.endpoint == 'pages.projects' %}active{% endif %}">Projects</a></li>
     </ul>
 </nav>

@@ -32,3 +32,13 @@ main {
     width: 80%;
     margin: 0 auto;
 }
+
+/* Style for the active/highlighted navigation link */
+.nav-pills .nav-link.active{
+    color:#ffffff;
+    background-color:#007bff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-decoration: none;
+}
