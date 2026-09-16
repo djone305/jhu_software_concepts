@@ -1,91 +1,346 @@
-'''
-Donnell Jones
-EN.605.256.83.FA26
-Section 83
-Module 2 - Assignment: Web Scraping - Part 1 (Scrape Data)
-Revision: New
-Date: 09/13/2026
-'''
-
-# Import libraries
 import json
+import os
+import re
 import time
+from typing import Any, Dict, List, Optional, Set
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 from bs4 import BeautifulSoup
-from selenium import webdriver
-import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
-if __name__ == "__main__":
-    options = uc.ChromeOptions()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-popup-blocking")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FILE = os.path.join(SCRIPT_DIR, "applicant_data.json")
+STATE_FILE = os.path.join(SCRIPT_DIR, "scraper_state.json")
+TARGET_RECORDS = 30000
 
-    
-    # Open the browser
-    driver = uc.Chrome(options=options)
+# Query partitioning to bypass GradCafe's pagination depth cap
+SEARCH_TERMS = [str(year) for year in range(2012, 2027)] + [
+    chr(c) for c in range(ord("a"), ord("z") + 1)
+]
+
+
+def get_record_id(
+    url: Optional[str],
+    university: str,
+    program_name: Optional[str],
+    date_added: str,
+    status_text: str,
+) -> str:
+    """Generates a unique identifier using URL or composite fallback signature."""
+    if url:
+        return url
+    return f"{university}|{program_name or ''}|{date_added}|{status_text}"
+
+
+def get_http_session() -> requests.Session:
+    """Initializes an HTTP session with retry backoff and browser headers."""
+    session = requests.Session()
+    retries = Retry(
+        total=5,
+        backoff_factor=2,
+        status_forcelist=[429, 500, 502, 503, 504],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    session.headers.update(
+        {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
+    )
+    return session
+
+
+def parse_status_dates(status_text: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    """Extracts status dates from main row status string."""
+    accepted, rejected, waitlisted = None, None, None
+    if "Accepted on" in status_text:
+        accepted = status_text.split("Accepted on")[-1].strip()
+    elif "Rejected on" in status_text:
+        rejected = status_text.split("Rejected on")[-1].strip()
+    elif "Waitlisted on" in status_text:
+        waitlisted = status_text.split("Waitlisted on")[-1].strip()
+    return accepted, rejected, waitlisted
+
+
+def load_existing_data(
+    data_filename: str = DATA_FILE, state_filename: str = STATE_FILE
+) -> tuple[List[Dict[str, Any]], Set[str], int, int]:
+    """Loads saved dataset and scraper state synchronously."""
+    scraped_data: List[Dict[str, Any]] = []
+    seen_ids: Set[str] = set()
+    start_term_idx: int = 0
+    start_page: int = 1
+
+    if os.path.exists(data_filename):
+        try:
+            with open(data_filename, "r", encoding="utf-8") as f:
+                scraped_data = json.load(f)
+                for item in scraped_data:
+                    rec_id = get_record_id(
+                        item.get("URL link to applicant entry"),
+                        item.get("University", ""),
+                        item.get("Program Name"),
+                        item.get("Date of Information Added to Grad Cafe", ""),
+                        item.get("Applicant Status", ""),
+                    )
+                    seen_ids.add(rec_id)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"Warning: Failed to parse '{data_filename}' ({e}). Starting fresh array.")
+
+    if os.path.exists(state_filename):
+        try:
+            with open(state_filename, "r", encoding="utf-8") as f:
+                state = json.load(f)
+                start_term_idx = state.get("term_idx", 0)
+                start_page = state.get("page_num", 1)
+                seen_ids.update(state.get("seen_ids", []))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    return scraped_data, seen_ids, start_term_idx, start_page
+
+
+def save_data(
+    all_data: List[Dict[str, Any]],
+    seen_ids: Set[str],
+    term_idx: int,
+    page_num: int,
+    data_filename: str = DATA_FILE,
+    state_filename: str = STATE_FILE,
+) -> None:
+    """Atomically updates data file and scraper resume state on disk."""
+    temp_data_file = f"{data_filename}.tmp"
+    temp_state_file = f"{state_filename}.tmp"
 
     try:
-        # Load the page and wait for the JavaScript to populate the data
+        with open(temp_data_file, "w", encoding="utf-8") as f:
+            json.dump(all_data, f, indent=2, ensure_ascii=False)
+        os.replace(temp_data_file, data_filename)
 
-        # Navigate to website
-        print("Loading page...")
-        driver.get("https://www.thegradcafe.com/survey")
+        state = {
+            "term_idx": term_idx,
+            "page_num": page_num,
+            "seen_ids": list(seen_ids),
+        }
+        with open(temp_state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+        os.replace(temp_state_file, state_filename)
 
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        current_term = (
+            SEARCH_TERMS[term_idx] if term_idx < len(SEARCH_TERMS) else "Completed"
         )
+        print(
+            f" [DISK SAVED] Total Records: {len(all_data):,}/{TARGET_RECORDS:,} | "
+            f"Partition Index: {term_idx} ('{current_term}') | Page: {page_num}"
+        )
+    except Exception as e:
+        print(f"Error saving data: {e}")
 
-        #5 Wait for survey results
-        time.sleep(2)
 
-        # Grab dynamic HTML directly from Selenium 
-        html_content = driver.page_source
+def scrape(
+    target_count: int = TARGET_RECORDS,
+    start_term_idx: int = 0,
+    start_page: int = 1,
+    existing_data: Optional[List[Dict[str, Any]]] = None,
+    seen_ids: Optional[Set[str]] = None,
+) -> tuple[List[Dict[str, Any]], Set[str], int, int]:
+    """Iterates through search partitions to harvest applicant entries up to target_count."""
+    all_data = existing_data if existing_data is not None else []
+    seen_ids = seen_ids if seen_ids is not None else set()
+    session = get_http_session()
 
-        # Parse the HTML with BeautifulSoup
-        soup = BeautifulSoup(html_content, "html.parser")
+    term_idx = start_term_idx
+    page_num = start_page
 
-        # Find the main table element
-        table = soup.find("table")
+    print(f"Resuming Scrape | Current Records: {len(all_data):,}/{target_count:,}")
 
-        results = []
+    try:
+        while term_idx < len(SEARCH_TERMS) and len(all_data) < target_count:
+            term = SEARCH_TERMS[term_idx]
+            consecutive_empty_pages = 0
+            print(f"\n=== Partition [{term_idx + 1}/{len(SEARCH_TERMS)}]: Querying '{term}' ===")
 
-        if table:
-            # Find all table rows within the table
-            for row in table.find_all("tr"):
-                # Find all table data cells inside the current row
-                cells = row.find_all("td")
+            while len(all_data) < target_count:
+                url = (
+                    f"https://www.thegradcafe.com/survey?"
+                    f"q={requests.utils.quote(term)}&page={page_num}"
+                )
+                print(
+                    f"Query: '{term:<10}' | Page: {page_num:<3} | "
+                    f"Running Total: {len(all_data):,}/{target_count:,} records"
+                )
 
-                # Skip empty or header rows
-                if not cells:
+                try:
+                    response = session.get(url, timeout=12)
+                    if response.status_code != 200:
+                        print(f"Page {page_num} returned HTTP {response.status_code}. Skipping...")
+                        page_num += 1
+                        continue
+                except requests.RequestException as e:
+                    print(f"Network error on page {page_num}: {e}. Skipping...")
+                    page_num += 1
                     continue
 
-                school_info = cells[0].get_text(strip=True)
+                soup = BeautifulSoup(response.content, "html.parser")
+                tbody = soup.find("tbody", class_=re.compile(r"tw-divide-y"))
 
-                if school_info:
-                    results.append({"school": school_info})
-        print(json.dumps(results[:5], indent=2))
+                if not tbody:
+                    print(f"No results container on page {page_num}. Switching term.")
+                    break
 
-    finally:
-        driver.quit()
-# Create list of parameters to search website with using mechanical soup
-# Create for loop to query webiste
-# Parse data using BeautifulSoup
-# Save parsed data as JSON file
+                rows = tbody.find_all("tr", recursive=False)
+                if not rows:
+                    print(f"Empty row set on page {page_num}. Switching term.")
+                    break
 
+                records_added_this_page = 0
+                i = 0
 
+                while i < len(rows):
+                    main_row = rows[i]
+                    cols = main_row.find_all("td", recursive=False)
 
-# Function for scraping website
-def scrape():
-    pass
+                    if len(cols) < 5:
+                        i += 1
+                        continue
 
-# Function to save scraped data
-def save_data():
-    pass
+                    university = cols[0].get_text(strip=True)
+                    prog_container = cols[1].find("div", class_=re.compile(r"tw-text-gray-900"))
+                    spans = prog_container.find_all("span") if prog_container else []
+                    program_name = spans[0].get_text(strip=True) if len(spans) > 0 else None
+                    degree = spans[1].get_text(strip=True) if len(spans) > 1 else None
 
-################################################################################
+                    date_added = cols[2].get_text(strip=True)
+                    status_text = cols[3].get_text(strip=True)
+
+                    link_tag = cols[4].find("a", href=True)
+                    entry_url = (
+                        f"https://www.thegradcafe.com{link_tag['href']}"
+                        if link_tag
+                        else None
+                    )
+
+                    rec_id = get_record_id(
+                        entry_url, university, program_name, date_added, status_text
+                    )
+
+                    if rec_id in seen_ids:
+                        i += 1
+                        while i < len(rows) and len(rows[i].find_all("td", recursive=False)) < 5:
+                            i += 1
+                        continue
+
+                    accepted_date, rejected_date, waitlist_date = parse_status_dates(status_text)
+                    term_season, student_status = None, None
+                    gpa, gre, gre_v, gre_q, gre_aw = None, None, None, None, None
+                    comments = None
+
+                    j = i + 1
+                    while j < len(rows):
+                        sub_row = rows[j]
+                        if len(sub_row.find_all("td", recursive=False)) >= 5:
+                            break
+
+                        badges = sub_row.find_all("div", class_=re.compile(r"tw-rounded-md"))
+                        for badge in badges:
+                            text = badge.get_text(strip=True)
+                            if re.search(r"\b(Fall|Spring|Summer|Winter)\s+\d{4}\b", text, re.I):
+                                term_season = text
+                            elif text in ["American", "International"]:
+                                student_status = text
+                            elif text.startswith("GPA"):
+                                gpa = text.replace("GPA", "").strip()
+                            elif text.startswith("GRE V"):
+                                gre_v = text.replace("GRE V", "").strip()
+                            elif text.startswith("GRE Q"):
+                                gre_q = text.replace("GRE Q", "").strip()
+                            elif text.startswith("GRE AW"):
+                                gre_aw = text.replace("GRE AW", "").strip()
+                            elif text.startswith("GRE"):
+                                gre = text.replace("GRE", "").strip()
+
+                        comment_p = sub_row.find(
+                            "p", class_=re.compile(r"tw-text-gray-500.*tw-text-sm")
+                        )
+                        if comment_p:
+                            comments = comment_p.get_text(strip=True)
+
+                        j += 1
+
+                    i = j
+                    seen_ids.add(rec_id)
+
+                    all_data.append(
+                        {
+                            "University": university,
+                            "Program Name": program_name,
+                            "Masters or PhD": degree,
+                            "Date of Information Added to Grad Cafe": date_added,
+                            "Applicant Status": status_text,
+                            "Accepted: Acceptance Date": accepted_date,
+                            "Rejected: Rejection Date": rejected_date,
+                            "Waitlisted Date": waitlist_date,
+                            "URL link to applicant entry": entry_url,
+                            "Semester and Year of Program Start": term_season,
+                            "International / American Student": student_status,
+                            "GPA": gpa,
+                            "GRE Score": gre,
+                            "GRE V Score": gre_v,
+                            "GRE Q Score": gre_q,
+                            "GRE AW": gre_aw,
+                            "Comments": comments,
+                        }
+                    )
+                    records_added_this_page += 1
+
+                    if len(all_data) >= target_count:
+                        break
+
+                if records_added_this_page == 0:
+                    consecutive_empty_pages += 1
+                    if consecutive_empty_pages >= 3:
+                        print(f"Partition '{term}' exhausted or duplicate capped. Switching term.")
+                        break
+                else:
+                    consecutive_empty_pages = 0
+
+                page_num += 1
+
+                if page_num % 5 == 0 or len(all_data) >= target_count:
+                    save_data(all_data, seen_ids, term_idx, page_num)
+
+                time.sleep(1)
+
+            term_idx += 1
+            page_num = 1
+            save_data(all_data, seen_ids, term_idx, page_num)
+
+    except KeyboardInterrupt:
+        print("\nProcess manually interrupted! Flushing current state to disk...")
+        save_data(all_data, seen_ids, term_idx, page_num)
+
+    return all_data, seen_ids, term_idx, page_num
+
 
 if __name__ == "__main__":
-  main()
+    existing_data, seen_ids, start_term_idx, start_page = load_existing_data(
+        DATA_FILE, STATE_FILE
+    )
+
+    if len(existing_data) >= TARGET_RECORDS:
+        print(f"Target of {TARGET_RECORDS:,} records already achieved in '{DATA_FILE}'!")
+    else:
+        final_data, updated_ids, end_term, end_page = scrape(
+            target_count=TARGET_RECORDS,
+            start_term_idx=start_term_idx,
+            start_page=start_page,
+            existing_data=existing_data,
+            seen_ids=seen_ids,
+        )
+        save_data(final_data, updated_ids, end_term, end_page)

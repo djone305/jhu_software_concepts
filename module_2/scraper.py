@@ -11,9 +11,10 @@ import mechanicalsoup
 URL = "https://www.thegradcafe.com/survey"
 page = requests.get(URL)
 soup = BeautifulSoup(page.content, "html.parser")
-program_names = soup.find_all("div", class_="tw-text-gray-900")
-for program_name in program_names:
-    text = program_name.get_text(strip=True)
+admissions_results = soup.find_all("tbody", class_="tw-divide-y tw-divide-gray-200 tw-bg-white")
+for admission_result in admissions_results:
+    print(admission_result, end="\n" * 2)
+    text = admission_result.get_text(strip=True)
     if text:
         print(text)
 
