@@ -1,22 +1,17 @@
-import psycopg
+from models import SessionLocal, Applicant
 
-# Connection parameters
-conn_params = {
-    "dbname": "postgres",
-    "user": "postgres",
-    "password": "Python2026$",
-    "host": "localhost",
-    "port": "5432"
-}
-
+session = SessionLocal()
 try:
-    # Establish connection
-    with psycopg.connect(**conn_params) as conn:
-        with conn.cursor() as cur:
-            # Run a sample query
-            cur.execute("SELECT version();")
-            db_version = cur.fetchone()
-            print("Connected successfully!")
-            print(f"PostgreSQL version: {db_version[0]}")
-except Exception as e:
-    print(f"Error connecting to database: {e}")
+    # Check total rows
+    total_count = session.query(Applicant).count()
+    print(f"Total rows in PostgreSQL 'applicants' table: {total_count}\n")
+    
+    if total_count > 0:
+        print("Sample of first 3 rows in the database:")
+        sample_rows = session.query(Applicant).limit(3).all()
+        for i, row in enumerate(sample_rows):
+            print(f"  [{i+1}] term: '{row.term}' | status: '{row.status}' | degree: '{row.degree}' | gpa: {row.gpa}")
+    else:
+        print("The table is currently empty. This means your data-loading script populated a local file (like SQLite) instead of this PostgreSQL database.")
+finally:
+    session.close()
