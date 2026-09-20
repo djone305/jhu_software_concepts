@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grad Admissions Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Graduate Admissions Analysis</h1>
+        <p>PostgreSQL Database Insights Powered by SQLAlchemy</p>
+    </header>
+
+    <main class="container">
+        <!-- Required Questions -->
+        <section class="card">
+            <h2>Question 1</h2>
+            <p class="question">Fall 2026 applicant count:</p>
+            <p class="answer">{{ q1 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 4</h2>
+            <p class="question">Average GPA of American applicants (Fall 2026):</p>
+            <p class="answer">{{ q4 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 5</h2>
+            <p class="question">Fall 2025 acceptance percentage:</p>
+            <p class="answer">{{ q5 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 8</h2>
+            <p class="question">Fall 2026 PhD CS acceptances at elite schools (Original Fields):</p>
+            <p class="answer">{{ q8 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 9</h2>
+            <p class="question">Fall 2026 PhD CS acceptances (LLM-generated fields):</p>
+            <p class="answer">Original count: {{ q8 }} | LLM count: {{ q9 }}</p>
+        </section>
+
+        <!-- Custom Questions -->
+        <section class="card custom-q">
+            <h2>Custom Question 1</h2>
+            <p class="question">Average GPA of Fall 2026 PhD applicants grouped by status:</p>
+            <ul>
+                {% for row in cq1 %}
+                <li><strong>{{ row.status }}:</strong> {{ row.gpa }} GPA ({{ row.count }} applicants)</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="card custom-q">
+            <h2>Custom Question 2</h2>
+            <p class="question">Count of US vs International Applicants (Fall 2026):</p>
+            <ul>
+                {% for row in cq2 %}
+                <li><strong>{{ row.type }}:</strong> {{ row.count }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
