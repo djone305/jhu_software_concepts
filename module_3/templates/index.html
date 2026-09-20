@@ -12,42 +12,56 @@
         <p>PostgreSQL Database Insights Powered by SQLAlchemy</p>
     </header>
 
+    <!-- Flash Messages (Displays Success/Warning when Pull Data is clicked) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <main class="container">
+        <!-- Pull Data Action Section -->
+        <section class="card pull-data-section">
+            <h2>Update Database</h2>
+            <p><strong>Pull Data</strong> checks Grad Café for newly submitted application results and adds new records to the database. Depending on the amount of new data available, this may take some time.</p>
+            <form action="{{ url_for('pull_data') }}" method="POST">
+                <button type="submit" class="btn-pull">Pull Data</button>
+            </form>
+        </section>
+
         <!-- Required Questions -->
         <section class="card">
-            <h2>Question 1</h2>
-            <p class="question">Fall 2026 applicant count:</p>
-            <p class="answer">{{ q1 }}</p>
+            <h2>Question 1: What is the total number of applicants for the Fall 2026 term?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ q1 }}</p>
         </section>
 
         <section class="card">
-            <h2>Question 4</h2>
-            <p class="question">Average GPA of American applicants (Fall 2026):</p>
-            <p class="answer">{{ q4 }}</p>
+            <h2>Question 4: What is the average GPA of American applicants for Fall 2026?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ q4 }}</p>
         </section>
 
         <section class="card">
-            <h2>Question 5</h2>
-            <p class="question">Fall 2025 acceptance percentage:</p>
-            <p class="answer">{{ q5 }}</p>
+            <h2>Question 5: What was the overall acceptance percentage for the Fall 2025 term?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ q5 }}</p>
         </section>
 
         <section class="card">
-            <h2>Question 8</h2>
-            <p class="question">Fall 2026 PhD CS acceptances at elite schools (Original Fields):</p>
-            <p class="answer">{{ q8 }}</p>
+            <h2>Question 8: How many applicants were accepted for a PhD in Computer Science in Fall 2026 (using the original program fields)?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ q8 }}</p>
         </section>
 
         <section class="card">
-            <h2>Question 9</h2>
-            <p class="question">Fall 2026 PhD CS acceptances (LLM-generated fields):</p>
-            <p class="answer">Original count: {{ q8 }} | LLM count: {{ q9 }}</p>
+            <h2>Question 9: How many applicants were accepted for a PhD in Computer Science in Fall 2026 (using the LLM-generated fields)?</h2>
+            <p class="answer"><strong>Answer:</strong> Original count: {{ q8 }} | LLM count: {{ q9 }}</p>
         </section>
 
         <!-- Custom Questions -->
         <section class="card custom-q">
-            <h2>Custom Question 1</h2>
-            <p class="question">Average GPA of Fall 2026 PhD applicants grouped by status:</p>
+            <h2>Custom Question 1: What is the average GPA of Fall 2026 PhD applicants, grouped by their admission status?</h2>
             <ul>
                 {% for row in cq1 %}
                 <li><strong>{{ row.status }}:</strong> {{ row.gpa }} GPA ({{ row.count }} applicants)</li>
@@ -56,11 +70,10 @@
         </section>
 
         <section class="card custom-q">
-            <h2>Custom Question 2</h2>
-            <p class="question">Count of US vs International Applicants (Fall 2026):</p>
+            <h2>Custom Question 2: What is the count breakdown of US versus International applicants for Fall 2026?</h2>
             <ul>
                 {% for row in cq2 %}
-                <li><strong>{{ row.type }}:</strong> {{ row.count }}</li>
+                <li><strong>{{ row.type }}:</strong> {{ row.count }} applicants</li>
                 {% endfor %}
             </ul>
         </section>

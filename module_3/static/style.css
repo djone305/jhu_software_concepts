@@ -71,3 +71,54 @@ ul li {
     border-radius: 4px;
     border-left: 3px solid #28a745;
 }
+
+/* Pull Data Button Styles */
+.pull-data-section {
+    grid-column: 1 / -1; /* Makes this card span the full width of the screen */
+    text-align: center;
+    border-top-color: #ff9800; /* Distinct orange border for the action card */
+}
+
+.btn-pull {
+    background-color: #0056b3;
+    color: white;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-pull:hover {
+    background-color: #003d82;
+}
+
+/* Flash Message Styles */
+.flash-messages {
+    max-width: 900px;
+    margin: 1.5rem auto 0 auto;
+    padding: 0 1rem;
+}
+
+.flash {
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+.flash.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.flash.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
