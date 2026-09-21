@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import re
@@ -136,7 +137,7 @@ def save_data(
             SEARCH_TERMS[term_idx] if term_idx < len(SEARCH_TERMS) else "Completed"
         )
         print(
-            f" [DISK SAVED] Total Records: {len(all_data):,}/{TARGET_RECORDS:,} | "
+            f" [DISK SAVED] Total Records: {len(all_data):,} | "
             f"Partition Index: {term_idx} ('{current_term}') | Page: {page_num}"
         )
     except Exception as e:
@@ -328,16 +329,38 @@ def scrape(
     return all_data, seen_ids, term_idx, page_num
 
 
-if __name__ == "__main__":
-    existing_data, seen_ids, start_term_idx, start_page = load_existing_data(
-        DATA_FILE, STATE_FILE
-    )
+def run_scrape(record_limit: int = 10) -> List[Dict[str, Any]]:
+    """Programmatic entry point for Flask apps to trigger scraping of N new records."""
+    existing_data, seen_ids, start_term_idx, start_page = load_existing_data()
+    initial_count = len(existing_data)
+    target_count = initial_count + record_limit
 
-    if len(existing_data) >= TARGET_RECORDS:
-        print(f"Target of {TARGET_RECORDS:,} records already achieved in '{DATA_FILE}'!")
+    final_data, updated_ids, end_term, end_page = scrape(
+        target_count=target_count,
+        start_term_idx=start_term_idx,
+        start_page=start_page,
+        existing_data=existing_data,
+        seen_ids=seen_ids,
+    )
+    save_data(final_data, updated_ids, end_term, end_page)
+    
+    # Return newly scraped elements
+    return final_data[initial_count:]
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="GradCafe Web Scraper")
+    parser.add_argument("--limit", type=int, default=TARGET_RECORDS, help="Total target records or limit to pull")
+    args = parser.parse_args()
+
+    existing_data, seen_ids, start_term_idx, start_page = load_existing_data()
+
+    if len(existing_data) >= args.limit and args.limit == TARGET_RECORDS:
+        print(f"Target of {args.limit:,} records already achieved in '{DATA_FILE}'!")
     else:
+        target = args.limit if args.limit != TARGET_RECORDS else args.limit
         final_data, updated_ids, end_term, end_page = scrape(
-            target_count=TARGET_RECORDS,
+            target_count=target,
             start_term_idx=start_term_idx,
             start_page=start_page,
             existing_data=existing_data,
