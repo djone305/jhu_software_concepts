@@ -193,9 +193,17 @@ def run_queries():
     # ---------------------------------------------------------
     print("\n--- Custom Question 1 ---")
     print("Question: What is the average GPA of Fall 2026 PhD applicants, grouped by their admission status?")
+    
+    # FIX: Grouping raw status strings creates fragmented rows. This CASE statement 
+    # normalizes statuses into 3 distinct buckets before performing the GROUP BY.
     q10_query = """
         SELECT 
-            status, 
+            CASE 
+                WHEN status ILIKE '%Accept%' THEN 'Accepted'
+                WHEN status ILIKE '%Reject%' THEN 'Rejected'
+                WHEN status ILIKE '%Wait%' THEN 'Waitlisted'
+                ELSE 'Other'
+            END AS normalized_status, 
             AVG(gpa) AS avg_gpa, 
             COUNT(*) AS total_applicants
         FROM applicants
@@ -203,7 +211,7 @@ def run_queries():
           AND (degree ILIKE '%PhD%' OR degree ~* '\\bPh\\.?D\\b')
           AND gpa IS NOT NULL
           AND (status ILIKE '%Accept%' OR status ILIKE '%Reject%' OR status ILIKE '%Wait%')
-        GROUP BY status
+        GROUP BY 1
         ORDER BY avg_gpa DESC;
     """
     cursor.execute(q10_query)
@@ -213,7 +221,8 @@ def run_queries():
         status = row[0]
         avg_gpa = format_metric(row[1])
         count = format_count(row[2])
-        print(f"Status: {status} | Average GPA: {avg_gpa} | Count: {count}")
+        # FIX: Formatted with :<10 to keep the columns cleanly aligned in the terminal output
+        print(f"Status: {status:<10} | Average GPA: {avg_gpa} | Count: {count}")
 
     # ---------------------------------------------------------
     # Custom Question 2: Top 5 Universities by Application Volume (Fall 2026)
