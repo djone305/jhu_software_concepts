@@ -1,3 +1,4 @@
+import sys
 from sqlalchemy import select, func, case, or_, and_, desc
 from models import SessionLocal, Applicant
 
@@ -17,8 +18,9 @@ def run_queries():
             Applicant.term.ilike('%Fall 2026%')
         )
         count_q1 = session.scalar(stmt_q1)
-        print(f"Question 1: Fall 2026 applicant count")
-        print(f"Result: {count_q1:,}\n")
+        print("--- Question 1 ---")
+        print("Question: How many entries in your database are from applicants who applied for Fall 2026?")
+        print(f"Result: Fall 2026 applicant count: {count_q1:,}\n")
 
         # --------------------------------------------------
         # Question 4: Average GPA of American applicants (Fall 2026)
@@ -30,8 +32,9 @@ def run_queries():
             )
         )
         avg_gpa_q4 = session.scalar(stmt_q4)
-        print(f"Question 4: Average GPA of American applicants (Fall 2026)")
-        print(f"Result: {avg_gpa_q4:.2f}\n" if avg_gpa_q4 else "Result: N/A\n")
+        print("--- Question 4 ---")
+        print("Question: What is the average GPA of American applicants who applied for Fall 2026?")
+        print(f"Result: Average GPA of American applicants (Fall 2026): {avg_gpa_q4:.2f}\n" if avg_gpa_q4 else "Result: N/A\n")
 
         # --------------------------------------------------
         # Question 5: Fall 2025 acceptance percentage
@@ -43,8 +46,9 @@ def run_queries():
             Applicant.term.ilike('%Fall 2025%')
         )
         pct_q5 = session.scalar(stmt_q5)
-        print(f"Question 5: Fall 2025 acceptance percentage")
-        print(f"Result: {pct_q5:.2f}%\n" if pct_q5 else "Result: N/A\n")
+        print("--- Question 5 ---")
+        print("Question: What percentage of Fall 2025 entries are acceptances?")
+        print(f"Result: Fall 2025 acceptance percentage: {pct_q5:.2f}%\n" if pct_q5 else "Result: N/A\n")
 
         # --------------------------------------------------
         # Question 8: Fall 2026 acceptances for PhD in CS at elite schools (Original Fields)
@@ -69,8 +73,9 @@ def run_queries():
             )
         )
         count_q8 = session.scalar(stmt_q8)
-        print(f"Question 8: Fall 2026 PhD CS acceptances at elite schools (Original Fields)")
-        print(f"Result: {count_q8}\n")
+        print("--- Question 8 ---")
+        print("Question: How many Fall 2026 entries are acceptances from applicants applying for a PhD in Computer Science at Georgetown, MIT, Stanford, or Carnegie Mellon (using original fields)?")
+        print(f"Result: Original-field count: {count_q8}\n")
 
         # --------------------------------------------------
         # Question 9: Repeat Question 8 using LLM-generated fields
@@ -96,14 +101,22 @@ def run_queries():
         )
         count_q9 = session.scalar(stmt_q9)
         diff = count_q8 - count_q9
-        print(f"Question 9: Repeat Question 8 using LLM-generated fields")
+        print("--- Question 9 ---")
+        print("Question: Repeat Question 8 using the LLM-generated university and program fields, and compare the results.")
         print(f"Result: Original count: {count_q8} | LLM count: {count_q9} | Difference: {diff}\n")
 
         # --------------------------------------------------
         # Custom Question 1: Average GPA of Fall 2026 PhD applicants grouped by status
         # --------------------------------------------------
+        normalized_status = case(
+            (Applicant.status.ilike('%Wait%'), 'Waitlisted'),
+            (Applicant.status.ilike('%Accept%'), 'Accepted'),
+            (Applicant.status.ilike('%Reject%'), 'Rejected'),
+            else_='Other'
+        ).label('clean_status')
+
         stmt_custom = select(
-            Applicant.status,
+            normalized_status,
             func.avg(Applicant.gpa).label('avg_gpa'),
             func.count().label('total_applicants')
         ).where(
@@ -121,16 +134,16 @@ def run_queries():
                 )
             )
         ).group_by(
-            Applicant.status
+            normalized_status
         ).order_by(
             desc('avg_gpa')
         )
         
         custom_results = session.execute(stmt_custom).all()
-        print(f"Custom Question 1: Average GPA of Fall 2026 PhD applicants grouped by status")
-        for row in custom_results:
-            print(f" - Status: {row.status} | Avg GPA: {row.avg_gpa:.2f} | Count: {row.total_applicants:,}")
-        print()
+        print("--- Custom Question 1 ---")
+        print("Question: What is the average GPA of Fall 2026 PhD applicants, grouped by their admission status?")
+        formatted_rows = [f"Status: {row.clean_status} | Average GPA: {row.avg_gpa:.2f} | Count: {row.total_applicants:,}" for row in custom_results]
+        print(f"Result: {' | '.join(formatted_rows)}\n")
 
     finally:
         session.close()
