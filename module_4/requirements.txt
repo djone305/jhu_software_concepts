@@ -1,0 +1,9 @@
+Flask
+SQLAlchemy
+psycopg2-binary
+requests
+beautifulsoup4
+urllib3
+tqdm
+pytest
+psycopg[binary]

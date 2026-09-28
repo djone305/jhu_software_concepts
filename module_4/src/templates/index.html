@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grad Admissions Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div>
+                <h1>Graduate Admissions Analysis</h1>
+                <p>PostgreSQL Database Insights Powered by SQLAlchemy</p>
+            </div>
+            <!-- Top-Right Update Analysis Action -->
+            <div class="top-action">
+                <form action="{{ url_for('update_analysis') }}" method="POST">
+                    <button type="submit" class="btn-update">Update Analysis</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Status Banner for Active Background Pulls -->
+    {% if scraping_in_progress %}
+        <div class="status-banner warning">
+            <p><strong>Notice:</strong> New data is currently being retrieved from Grad Café in the background. You can click <strong>Update Analysis</strong> above at any time to refresh current database metrics.</p>
+        </div>
+    {% endif %}
+
+    <main class="container">
+        <!-- Pull Data Action Section -->
+        <section class="card pull-data-section">
+            <h2>Update Database</h2>
+            <p><strong>Pull Data</strong> checks Grad Café for newly submitted application results and adds new records to the database.</p>
+            
+            <form action="{{ url_for('pull_data') }}" method="POST" class="pull-data-form">
+                <div class="form-group">
+                    <label for="record_limit">Number of new records to pull (1–100):</label>
+                    <input 
+                        type="number" 
+                        id="record_limit" 
+                        name="record_limit" 
+                        min="1" 
+                        max="100" 
+                        value="10" 
+                        required
+                        {% if scraping_in_progress %}disabled{% endif %}
+                    >
+                </div>
+                <button type="submit" class="btn-pull" {% if scraping_in_progress %}disabled{% endif %}>
+                    {% if scraping_in_progress %}Pulling Data...{% else %}Pull Data{% endif %}
+                </button>
+            </form>
+        </section>
+
+        <!-- Required Questions -->
+        <section class="card">
+            <h2>Question 1: What is the total number of applicants for the Fall 2026 term?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ data.q1 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 4: What is the average GPA of American applicants for Fall 2026?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ data.q4 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 5: What was the overall acceptance percentage for the Fall 2025 term?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ data.q5 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 8: How many applicants were accepted for a PhD in Computer Science in Fall 2026 (using original fields)?</h2>
+            <p class="answer"><strong>Answer:</strong> {{ data.q8 }}</p>
+        </section>
+
+        <section class="card">
+            <h2>Question 9: How many applicants were accepted for a PhD in Computer Science in Fall 2026 (using LLM fields)?</h2>
+            <p class="answer"><strong>Answer:</strong> Original count: {{ data.q8 }} | LLM count: {{ data.q9 }}</p>
+        </section>
+
+        <!-- Custom Questions -->
+        <section class="card custom-q">
+            <h2>Custom Question 1: What is the average GPA of Fall 2026 PhD applicants, grouped by their admission status?</h2>
+            <ul>
+                {% for row in data.cq1 %}
+                <li><strong>{{ row.status }}:</strong> {{ row.gpa }} GPA ({{ row.count }} applicants)</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="card custom-q">
+            <h2>Custom Question 2: What is the count breakdown of US versus International applicants for Fall 2026?</h2>
+            <ul>
+                {% for row in data.cq2 %}
+                <li><strong>{{ row.type }}:</strong> {{ row.count }} applicants</li>
+                {% endfor %}
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
