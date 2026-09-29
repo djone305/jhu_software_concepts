@@ -7,3 +7,4 @@ urllib3
 tqdm
 pytest
 psycopg[binary]
+python-dotenv

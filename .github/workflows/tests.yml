@@ -40,8 +40,22 @@ jobs:
           if [ -f module_4/requirements.txt ]; then pip install -r module_4/requirements.txt; fi
           pip install pytest pytest-cov python-dotenv
 
+      - name: Create Dummy .env File for CI
+        run: |
+          echo "DB_USER=postgres" > module_4/src/.env
+          echo "DB_PASSWORD=postgrespassword" >> module_4/src/.env
+          echo "DB_HOST=localhost" >> module_4/src/.env
+          echo "DB_PORT=5432" >> module_4/src/.env
+          echo "DB_NAME=gradcafe_db" >> module_4/src/.env
+          echo "SECRET_KEY=ci-test-key" >> module_4/src/.env
+
       - name: Run Pytest Suite
         env:
+          DB_USER: postgres
+          DB_PASSWORD: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: gradcafe_db
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/gradcafe_db
           SECRET_KEY: ci-test-key
         run: |
