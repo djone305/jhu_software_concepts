@@ -1,0 +1,15 @@
+venv/
+*.gguf
+*.dll
+# Large datasets & state files
+*.json
+*.coverage
+
+# Models & binaries
+models/
+*.gguf
+*.dll
+
+# Environments
+venv/
+.venv/
