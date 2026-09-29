@@ -42,6 +42,7 @@ jobs:
 
       - name: Create Dummy .env File for CI
         run: |
+          mkdir -p module_4/src
           echo "DB_USER=postgres" > module_4/src/.env
           echo "DB_PASSWORD=postgrespassword" >> module_4/src/.env
           echo "DB_HOST=localhost" >> module_4/src/.env
