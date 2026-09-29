@@ -61,4 +61,4 @@ jobs:
           SECRET_KEY: ci-test-key
         run: |
           cd module_4
-          pytest -v --cov=src
+          pytest -v --cov=src --cov-fail-under=30
