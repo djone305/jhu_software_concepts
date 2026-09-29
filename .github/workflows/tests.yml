@@ -40,7 +40,7 @@ jobs:
           if [ -f module_4/requirements.txt ]; then pip install -r module_4/requirements.txt; fi
           pip install pytest pytest-cov python-dotenv
 
-      - name: Create Dummy .env File for CI
+      - name: Create CI .env File
         run: |
           mkdir -p module_4/src
           echo "DB_USER=postgres" > module_4/src/.env
