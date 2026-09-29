@@ -343,7 +343,7 @@ def run_scrape(record_limit: int = 10) -> List[Dict[str, Any]]:
         seen_ids=seen_ids,
     )
     save_data(final_data, updated_ids, end_term, end_page)
-    
+
     # Return newly scraped elements
     return final_data[initial_count:]
 

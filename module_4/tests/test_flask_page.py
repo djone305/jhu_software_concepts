@@ -1,55 +1,63 @@
-import os
 import sys
+from pathlib import Path
+
+# Ensure src directory is in sys.path
+src_path = Path(__file__).resolve().parent.parent / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
 import pytest
-from unittest.mock import patch
-
-# Dynamically add the 'src' directory to Python's search path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
-
-from app import app
+from app import app as flask_app
 
 
 @pytest.fixture
-def client():
-    """Configures Flask app for testing and provides a test client."""
-    app.config["TESTING"] = True
-    app.config["WTF_CSRF_ENABLED"] = False
-    with app.test_client() as client:
-        yield client
+def app():
+    """Configures the Flask app for testing."""
+    flask_app.config.update({
+        "TESTING": True,
+        "SERVER_NAME": "localhost",
+    })
+    yield flask_app
 
 
-def test_app_routes_configured():
-    """Assert that required routes are defined in the Flask app."""
+@pytest.fixture
+def client(app):
+    """Creates a test client for sending HTTP requests."""
+    return app.test_client()
+
+
+@pytest.mark.web
+def test_app_factory_and_routes(app):
+    """Assert a testable Flask app exists and required routes/configurations are set."""
+    assert app is not None
+    assert app.config["TESTING"] is True
+
+    # Retrieve registered endpoints from app url_map
     registered_routes = [rule.rule for rule in app.url_map.iter_rules()]
 
+    # Assert base routes exist
     assert "/" in registered_routes
-    assert "/pull_data" in registered_routes
-    assert "/update_analysis" in registered_routes
+    assert "/update-analysis" in registered_routes
+    assert "/pull-data" in registered_routes
+    assert "/pull-status" in registered_routes
 
 
-@patch("app.get_analysis_data")
-def test_get_analysis_page_load(mock_get_analysis_data, client):
-    """Test page load status 200 and verify required content/buttons."""
-    # Mock database return data so tests pass independently of live DB
-    mock_get_analysis_data.return_value = {
-        "summary": "Answer: 85% acceptance rate calculated.",
-        "metrics": {"total_applicants": 100},
-    }
-
-    # Execute GET request
-    response = client.get("/")
-
-    # 1. Assert HTTP Status 200
+@pytest.mark.web
+def test_get_analysis_page_load(client):
+    """
+    Test GET request for the analysis page.
+    Validates Status 200, essential buttons, and required text content.
+    """
+    # Fetch root dashboard
+    response = client.get("/", follow_redirects=True)
     assert response.status_code == 200
 
-    html = response.data.decode("utf-8")
+    html_content = response.get_data(as_text=True)
 
-    # 2. Assert page contains required buttons/text
-    assert "Pull Data" in html
-    assert "Update Analysis" in html
+    # Assert required buttons exist in HTML
+    assert "Pull Data" in html_content
+    assert "Update Analysis" in html_content
 
-    # 3. Assert page text includes 'Analysis' and at least one 'Answer:'
-    assert "Analysis" in html
-    assert "Answer:" in html
+    # Assert required page text exists
+    assert "Analysis" in html_content
+    assert "Answer:" in html_content

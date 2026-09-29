@@ -1,0 +1,65 @@
+create_pdf.py
+.env
+.venv/
+__pycache__/
+*.pyc
+
+*.gguf
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Pytest cache
+.pytest_cache/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Pytest cache
+.pytest_cache/
+
+venv/
+*.gguf
+*.dll
+# Large datasets & state files
+*.json
+*.coverage
+
+# Models & binaries
+models/
+*.gguf
+*.dll
+
+# Environments
+venv/
+.venv/
+*.gguf
+
