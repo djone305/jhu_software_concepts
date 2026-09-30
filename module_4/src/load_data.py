@@ -5,6 +5,15 @@ from models import Applicant, SessionLocal
 logger = logging.getLogger(__name__)
 
 def safe_float(val: Any) -> float | None:
+    """
+    Safely casts a value to a float, returning None if invalid.
+
+    Args:
+        val (Any): The raw value to cast (string, int, float, etc.).
+
+    Returns:
+        float | None: The casted float value, or None if a ValueError or TypeError occurs.
+    """
     try:
         return float(val) if val is not None else None
     except (ValueError, TypeError):
@@ -13,7 +22,16 @@ def safe_float(val: Any) -> float | None:
 def load_scraped_data_to_db(cleaned_records: List[Dict[str, Any]]) -> int:
     """
     Parses cleaned dictionaries, maps fields to the Applicant ORM model,
-    and commits them to PostgreSQL. Returns inserted record count.
+    and commits them to the PostgreSQL database in a single transaction.
+
+    Args:
+        cleaned_records (list): A list of dictionaries containing cleaned applicant data.
+
+    Returns:
+        int: The total number of records successfully inserted into the database.
+
+    Raises:
+        Exception: If the database transaction fails, triggering a rollback.
     """
     if not cleaned_records:
         return 0

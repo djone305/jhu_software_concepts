@@ -27,14 +27,31 @@ def get_record_id(
     date_added: str,
     status_text: str,
 ) -> str:
-    """Generates a unique identifier using URL or composite fallback signature."""
+    """
+    Generates a unique identifier using URL or a composite fallback signature.
+
+    Args:
+        url (str, optional): The direct URL link to the applicant entry.
+        university (str): The name of the university.
+        program_name (str, optional): The graduate program name.
+        date_added (str): The date the record was posted to GradCafe.
+        status_text (str): The raw text of the admission status.
+
+    Returns:
+        str: A unique identifier string for the database to prevent duplicates.
+    """
     if url:
         return url
     return f"{university}|{program_name or ''}|{date_added}|{status_text}"
 
 
 def get_http_session() -> requests.Session:
-    """Initializes an HTTP session with retry backoff and browser headers."""
+    """
+    Initializes an HTTP session with retry backoff and browser headers.
+
+    Returns:
+        requests.Session: A configured requests session object resilient to rate limits.
+    """
     session = requests.Session()
     retries = Retry(
         total=5,
@@ -58,7 +75,16 @@ def get_http_session() -> requests.Session:
 
 
 def parse_status_dates(status_text: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
-    """Extracts status dates from main row status string."""
+    """
+    Extracts status dates from the main row status string.
+
+    Args:
+        status_text (str): The raw text string containing the decision and date.
+
+    Returns:
+        tuple: A 3-tuple containing (accepted_date, rejected_date, waitlist_date).
+               Values are strings if found, otherwise None.
+    """
     accepted, rejected, waitlisted = None, None, None
     if "Accepted on" in status_text:
         accepted = status_text.split("Accepted on")[-1].strip()
@@ -72,7 +98,16 @@ def parse_status_dates(status_text: str) -> tuple[Optional[str], Optional[str], 
 def load_existing_data(
     data_filename: str = DATA_FILE, state_filename: str = STATE_FILE
 ) -> tuple[List[Dict[str, Any]], Set[str], int, int]:
-    """Loads saved dataset and scraper state synchronously."""
+    """
+    Loads saved dataset and scraper state synchronously from disk.
+
+    Args:
+        data_filename (str, optional): Path to the JSON data file. Defaults to DATA_FILE.
+        state_filename (str, optional): Path to the JSON state tracker. Defaults to STATE_FILE.
+
+    Returns:
+        tuple: Contains (scraped_data list, seen_ids set, start_term_idx int, start_page int).
+    """
     scraped_data: List[Dict[str, Any]] = []
     seen_ids: Set[str] = set()
     start_term_idx: int = 0
@@ -115,7 +150,20 @@ def save_data(
     data_filename: str = DATA_FILE,
     state_filename: str = STATE_FILE,
 ) -> None:
-    """Atomically updates data file and scraper resume state on disk."""
+    """
+    Atomically updates the data file and scraper resume state on disk.
+
+    Args:
+        all_data (list): The complete list of applicant record dictionaries.
+        seen_ids (set): The set of unique record IDs already processed.
+        term_idx (int): The current index of the SEARCH_TERMS list.
+        page_num (int): The current pagination index for the search term.
+        data_filename (str, optional): Path to output JSON. Defaults to DATA_FILE.
+        state_filename (str, optional): Path to state JSON. Defaults to STATE_FILE.
+
+    Returns:
+        None
+    """
     temp_data_file = f"{data_filename}.tmp"
     temp_state_file = f"{state_filename}.tmp"
 
@@ -151,7 +199,19 @@ def scrape(
     existing_data: Optional[List[Dict[str, Any]]] = None,
     seen_ids: Optional[Set[str]] = None,
 ) -> tuple[List[Dict[str, Any]], Set[str], int, int]:
-    """Iterates through search partitions to harvest applicant entries up to target_count."""
+    """
+    Iterates through search partitions to harvest applicant entries up to a target count.
+
+    Args:
+        target_count (int, optional): The total number of records to stop at. Defaults to TARGET_RECORDS.
+        start_term_idx (int, optional): The search term index to begin with. Defaults to 0.
+        start_page (int, optional): The GradCafe page number to begin with. Defaults to 1.
+        existing_data (list, optional): Pre-loaded records to append to. Defaults to None.
+        seen_ids (set, optional): Pre-loaded IDs for deduplication. Defaults to None.
+
+    Returns:
+        tuple: A 4-tuple containing the final lists/states: (final_data, seen_ids, term_idx, page_num).
+    """
     all_data = existing_data if existing_data is not None else []
     seen_ids = seen_ids if seen_ids is not None else set()
     session = get_http_session()
@@ -330,7 +390,15 @@ def scrape(
 
 
 def run_scrape(record_limit: int = 10) -> List[Dict[str, Any]]:
-    """Programmatic entry point for Flask apps to trigger scraping of N new records."""
+    """
+    Programmatic entry point for Flask apps to trigger scraping of N new records.
+
+    Args:
+        record_limit (int, optional): The exact number of new records to fetch. Defaults to 10.
+
+    Returns:
+        list: A list containing only the newly scraped applicant dictionaries.
+    """
     existing_data, seen_ids, start_term_idx, start_page = load_existing_data()
     initial_count = len(existing_data)
     target_count = initial_count + record_limit

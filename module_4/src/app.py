@@ -20,12 +20,20 @@ task_status = {
 }
 
 
-def execute_etl_pipeline(record_limit: int = 10):
+def execute_etl_pipeline(record_limit: int = 10) -> None:
     """
-    Asynchronous ETL Task:
-    1. Scrapes raw records using scrape.py
-    2. Cleans/standardizes records using clean.py
-    3. Persists records to PostgreSQL using load_data.py
+    Asynchronous ETL Task that extracts, cleans, and loads data.
+
+    This function coordinates the full pipeline architecture:
+    1. Scrapes raw records using ``scrape.py``.
+    2. Cleans/standardizes records using ``clean.py``.
+    3. Persists records to PostgreSQL using ``load_data.py``.
+
+    Args:
+        record_limit (int, optional): The maximum number of new records to scrape. Defaults to 10.
+
+    Returns:
+        None: Updates the global ``task_status`` dictionary in-place.
     """
     global task_status
     task_status["is_running"] = True
@@ -58,8 +66,13 @@ def execute_etl_pipeline(record_limit: int = 10):
         task_status["is_running"] = False
 
 
-def fetch_database_metrics():
-    """Helper query runner to supply metric values to template rendering."""
+def fetch_database_metrics() -> dict:
+    """
+    Helper query runner to supply metric values to template rendering.
+
+    Returns:
+        dict: A dictionary of key database metrics, aggregations, and counts.
+    """
     # Placeholders or real queries for your database analytics
     return {
         "q1": "1,240",
@@ -81,7 +94,12 @@ def fetch_database_metrics():
 
 @app.route("/", methods=["GET"])
 def index():
-    """Main dashboard rendering."""
+    """
+    Main dashboard rendering route.
+
+    Returns:
+        str: Renders the ``index.html`` template with injected database metrics and task status.
+    """
     metrics_data = fetch_database_metrics()
     return render_template(
         "index.html",
@@ -92,14 +110,29 @@ def index():
 
 @app.route("/update-analysis", methods=["POST"])
 def update_analysis():
-    """Matches form action url_for('update_analysis'). Refreshes metrics."""
+    """
+    Refreshes metrics based on database queries.
+
+    Matches form action ``url_for('update_analysis')``.
+
+    Returns:
+        werkzeug.wrappers.Response: Redirects the user back to the index page.
+    """
     flash("Database analysis metrics refreshed.", "success")
     return redirect(url_for("index"))
 
 
 @app.route("/pull-data", methods=["POST"])
 def pull_data():
-    """Matches form action url_for('pull_data'). Triggers ETL task in background."""
+    """
+    Triggers the ETL task in a background daemon thread.
+
+    Matches form action ``url_for('pull_data')``. Reads the desired record limit from
+    the POST request form.
+
+    Returns:
+        werkzeug.wrappers.Response: Redirects the user back to the index page with a flash message.
+    """
     if task_status["is_running"]:
         flash("Data retrieval is already in progress.", "warning")
         return redirect(url_for("index"))
@@ -116,9 +149,14 @@ def pull_data():
 
 @app.route("/pull-status", methods=["GET"])
 def get_pipeline_status():
-    """Endpoint to inspect background process status."""
+    """
+    Endpoint to inspect the background ETL process status.
+
+    Returns:
+        flask.Response: A JSON payload representing the global ``task_status`` dictionary.
+    """
     return jsonify(task_status)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     app.run(host="0.0.0.0", port=5000, debug=True)

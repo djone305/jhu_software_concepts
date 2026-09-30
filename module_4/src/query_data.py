@@ -26,18 +26,59 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # --- Formatting Helpers ---
 def format_count(val):
+    """
+    Formats a numeric value as a comma-separated integer string.
+
+    Args:
+        val (int or float or None): The raw numeric value.
+
+    Returns:
+        str: The formatted integer string, or "0" if the value is None.
+    """
     return f"{int(val):,}" if val is not None else "0"
 
 
 def format_percentage(val):
+    """
+    Formats a numeric value as a two-decimal percentage string.
+
+    Args:
+        val (float or None): The raw decimal percentage.
+
+    Returns:
+        str: The formatted percentage string (e.g., "52.51%"), or "0.00%" if None.
+    """
     return f"{float(val):.2f}%" if val is not None else "0.00%"
 
 
 def format_metric(val):
+    """
+    Formats a numeric value as a two-decimal floating point string.
+
+    Args:
+        val (float or None): The raw numeric metric (e.g., GPA).
+
+    Returns:
+        str: The formatted float string, or "N/A" if the value is None.
+    """
     return f"{float(val):.2f}" if val is not None else "N/A"
 
 
 def run_orm_queries():
+    """
+    Executes a suite of SQLAlchemy ORM queries to extract analytical insights 
+    from the graduate admissions database, printing formatted results to standard output.
+
+    Queries executed include:
+        - Fall 2026 total applicant count.
+        - Average GPA of American Fall 2026 applicants.
+        - Acceptance rate for Fall 2025.
+        - PhD Computer Science acceptances (original vs LLM-generated comparison).
+        - Average GPA grouped by admission status.
+
+    Returns:
+        None
+    """
     session = SessionLocal()
     try:
         print("=" * 50)

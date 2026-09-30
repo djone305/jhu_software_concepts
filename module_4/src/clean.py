@@ -7,7 +7,19 @@ MAX_WORKERS = 8
 
 
 def worker_task(session: requests.Session, record: Dict[str, Any]) -> Tuple[bool, Dict[str, Any], str]:
-    """Sends a single record to the LLM endpoint for standardization."""
+    """
+    Sends a single record to the LLM endpoint for standardization.
+
+    Args:
+        session (requests.Session): The active requests session.
+        record (dict): A dictionary representing a single raw applicant record.
+
+    Returns:
+        tuple: A 3-tuple containing:
+            - bool: True if the request was successful, False otherwise.
+            - dict: The standardized record if successful, or the original record if failed.
+            - str: Error message or HTTP status if the request failed, else an empty string.
+    """
     try:
         response = session.post(LLM_ENDPOINT, json=record, timeout=30)
         if response.status_code == 200:
@@ -20,6 +32,14 @@ def worker_task(session: requests.Session, record: Dict[str, Any]) -> Tuple[bool
 def clean_scraped_records(raw_records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Called by Flask (app.py) to clean and standardize raw scraped records via the LLM API.
+    
+    Utilizes a ThreadPoolExecutor to process records concurrently.
+
+    Args:
+        raw_records (list): A list of dictionaries representing uncleaned applicant records.
+
+    Returns:
+        list: A list of dictionaries representing the cleaned and standardized records.
     """
     if not raw_records:
         return []
