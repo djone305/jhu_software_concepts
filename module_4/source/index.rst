@@ -1,17 +1,21 @@
-.. module_4 documentation master file, created by
-   sphinx-quickstart on Sun Sep 27 20:08:51 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+============================================
+GradCafe Analytics Engine Documentation
+============================================
 
-module_4 documentation
-======================
-
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
-
+Welcome to the documentation for the GradCafe Analytics Engine (Module 4).
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Table of Contents
 
+   overview
+   architecture
+   api_reference
+   testing
+
+Indices and Tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

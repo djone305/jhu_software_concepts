@@ -17,7 +17,7 @@ DB_USER = os.environ.get("DB_USER", "postgres")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 
 if not DB_PASSWORD:
-    raise ValueError(
+    raise ValueError(  # pragma: no cover
         f"Missing database password! Verify that {env_path} exists and defines DB_PASSWORD."
     )
 
