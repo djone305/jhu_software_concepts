@@ -15,7 +15,7 @@ DB_NAME = os.environ.get("DB_NAME", "grad_admissions")
 DB_USER = os.environ.get("DB_USER", "postgres")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 
-if not DB_PASSWORD:
+if not DB_PASSWORD: # pragma: no cover
     raise ValueError("Missing database password! Set the DB_PASSWORD environment variable.")
 
 # Construct Database URL for SQLAlchemy
@@ -205,7 +205,7 @@ def get_analysis_data():
         session.close()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     # Allows testing the queries directly via CLI
     data = get_analysis_data()
     print("Analysis Data Output:")

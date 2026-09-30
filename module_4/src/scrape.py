@@ -91,7 +91,7 @@ def load_existing_data(
                         item.get("Applicant Status", ""),
                     )
                     seen_ids.add(rec_id)
-        except (json.JSONDecodeError, OSError) as e:
+        except (json.JSONDecodeError, OSError) as e:  
             print(f"Warning: Failed to parse '{data_filename}' ({e}). Starting fresh array.")
 
     if os.path.exists(state_filename):
@@ -101,7 +101,7 @@ def load_existing_data(
                 start_term_idx = state.get("term_idx", 0)
                 start_page = state.get("page_num", 1)
                 seen_ids.update(state.get("seen_ids", []))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError):  
             pass
 
     return scraped_data, seen_ids, start_term_idx, start_page
@@ -140,7 +140,7 @@ def save_data(
             f" [DISK SAVED] Total Records: {len(all_data):,} | "
             f"Partition Index: {term_idx} ('{current_term}') | Page: {page_num}"
         )
-    except Exception as e:
+    except Exception as e: 
         print(f"Error saving data: {e}")
 
 
@@ -183,7 +183,7 @@ def scrape(
                         print(f"Page {page_num} returned HTTP {response.status_code}. Skipping...")
                         page_num += 1
                         continue
-                except requests.RequestException as e:
+                except requests.RequestException as e:  
                     print(f"Network error on page {page_num}: {e}. Skipping...")
                     page_num += 1
                     continue
@@ -322,7 +322,7 @@ def scrape(
             page_num = 1
             save_data(all_data, seen_ids, term_idx, page_num)
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt: 
         print("\nProcess manually interrupted! Flushing current state to disk...")
         save_data(all_data, seen_ids, term_idx, page_num)
 
@@ -348,7 +348,7 @@ def run_scrape(record_limit: int = 10) -> List[Dict[str, Any]]:
     return final_data[initial_count:]
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     parser = argparse.ArgumentParser(description="GradCafe Web Scraper")
     parser.add_argument("--limit", type=int, default=TARGET_RECORDS, help="Total target records or limit to pull")
     args = parser.parse_args()

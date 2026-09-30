@@ -4,6 +4,11 @@ from models import Applicant, SessionLocal
 
 logger = logging.getLogger(__name__)
 
+def safe_float(val: Any) -> float | None:
+    try:
+        return float(val) if val is not None else None
+    except (ValueError, TypeError):
+        return None
 
 def load_scraped_data_to_db(cleaned_records: List[Dict[str, Any]]) -> int:
     """
@@ -19,22 +24,17 @@ def load_scraped_data_to_db(cleaned_records: List[Dict[str, Any]]) -> int:
     try:
         for record in cleaned_records:
             applicant = Applicant(
-                university=record.get("University"),
-                program_name=record.get("Program Name"),
-                degree_type=record.get("Masters or PhD"),
-                date_added=record.get("Date of Information Added to Grad Cafe"),
-                applicant_status=record.get("Applicant Status"),
-                accepted_date=record.get("Accepted: Acceptance Date"),
-                rejected_date=record.get("Rejected: Rejection Date"),
-                waitlisted_date=record.get("Waitlisted Date"),
+                llm_generated_university=record.get("University"),
+                program=record.get("Program Name"),
+                degree=record.get("Masters or PhD"),
+                status=record.get("Applicant Status"),
                 url=record.get("URL link to applicant entry"),
-                term_season=record.get("Semester and Year of Program Start"),
-                student_status=record.get("International / American Student"),
-                gpa=record.get("GPA"),
-                gre=record.get("GRE Score"),
-                gre_v=record.get("GRE V Score"),
-                gre_q=record.get("GRE Q Score"),
-                gre_aw=record.get("GRE AW"),
+                term=record.get("Semester and Year of Program Start"),
+                us_or_international=record.get("International / American Student"),
+                gpa=safe_float(record.get("GPA")),
+                gre=safe_float(record.get("GRE Score")),
+                gre_v=safe_float(record.get("GRE V Score")),
+                gre_aw=safe_float(record.get("GRE AW")),
                 comments=record.get("Comments"),
             )
             session.add(applicant)
