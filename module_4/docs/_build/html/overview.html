@@ -1,0 +1,195 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview &amp; Setup &mdash; Grad Cafe ETL Pipeline  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="System Architecture" href="architecture.html" />
+    <link rel="prev" title="GradCafe Analytics Engine Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Grad Cafe ETL Pipeline
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview &amp; Setup</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#quickstart-setup">Quickstart &amp; Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#required-environment-variables">Required Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-web-application">Running the Web Application</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Grad Cafe ETL Pipeline</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Overview &amp; Setup</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="overview-setup">
+<h1>Overview &amp; Setup<a class="headerlink" href="#overview-setup" title="Link to this heading"></a></h1>
+<p>This project extracts, cleans, loads, and analyzes applicant data from GradCafe into a PostgreSQL database, providing a Flask web front-end for interactive data exploration.</p>
+<section id="quickstart-setup">
+<h2>Quickstart &amp; Setup<a class="headerlink" href="#quickstart-setup" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>Clone &amp; Navigate to Module Folder</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>module_4
+</pre></div>
+</div>
+</li>
+<li><p><strong>Set Up Virtual Environment</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w">  </span><span class="c1"># On Windows: .venv\Scripts\activate</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</li>
+<li><p><strong>Configure Environment Variables</strong>:</p>
+<p>Create a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file inside <code class="docutils literal notranslate"><span class="pre">src/</span></code> (or set system environment variables) with the following required parameters:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">DB_USER</span><span class="o">=</span><span class="s">postgres</span>
+<span class="na">DB_PASSWORD</span><span class="o">=</span><span class="s">postgrespassword</span>
+<span class="na">DB_HOST</span><span class="o">=</span><span class="s">localhost</span>
+<span class="na">DB_PORT</span><span class="o">=</span><span class="s">5432</span>
+<span class="na">DB_NAME</span><span class="o">=</span><span class="s">gradcafe_db</span>
+<span class="na">DATABASE_URL</span><span class="o">=</span><span class="s">postgresql://postgres:postgrespassword@localhost:5432/gradcafe_db</span>
+<span class="na">SECRET_KEY</span><span class="o">=</span><span class="s">dev-secret-key</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="required-environment-variables">
+<h2>Required Environment Variables<a class="headerlink" href="#required-environment-variables" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DB_USER</span></code></p></td>
+<td><p>PostgreSQL username</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">postgres</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DB_PASSWORD</span></code></p></td>
+<td><p>PostgreSQL password</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">postgrespassword</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DB_HOST</span></code></p></td>
+<td><p>PostgreSQL host address</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">localhost</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DB_PORT</span></code></p></td>
+<td><p>PostgreSQL connection port</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5432</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DB_NAME</span></code></p></td>
+<td><p>Target database name</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gradcafe_db</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DATABASE_URL</span></code></p></td>
+<td><p>Full SQLAlchemy connection string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">postgresql://postgres:postgrespassword&#64;localhost:5432/gradcafe_db</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SECRET_KEY</span></code></p></td>
+<td><p>Flask app session signing key</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">your-secret-key</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="running-the-web-application">
+<h2>Running the Web Application<a class="headerlink" href="#running-the-web-application" title="Link to this heading"></a></h2>
+<p>Start the Flask development server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>src/app.py
+</pre></div>
+</div>
+<p>Access the web portal at <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:5000</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="GradCafe Analytics Engine Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="System Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Donnell.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -34,14 +34,14 @@ Expected DOM Selectors (UI Testing)
 
 UI tests in ``tests/test_buttons.py`` and ``tests/test_flask_page.py`` validate the presence of specific HTML elements:
 
-===================  =======================  ======================================================
-Page Route           Selector                 Expected Element / Behavior
-===================  =======================  ======================================================
-``/``                ``table#analysis-table`` Analysis table containing summary metrics
-``/``                ``form#filter-form``     Form containing dropdowns for university/program filter
-``/``                ``button#submit-btn``    Filter submission button
-``/index``           ``div.alert-info``       Status message display area
-===================  =======================  ======================================================
+====================  ========================  ==============================================================
+Page Route            Selector                  Expected Element / Behavior
+====================  ========================  ==============================================================
+``/``                 ``table#analysis-table``  Analysis table containing summary metrics
+``/``                 ``form#filter-form``      Form containing dropdowns for university/program filter
+``/``                 ``button#submit-btn``     Filter submission button
+``/index``            ``div.alert-info``        Status message display area
+====================  ========================  ==============================================================
 
 Fixtures & Test Doubles
 -----------------------

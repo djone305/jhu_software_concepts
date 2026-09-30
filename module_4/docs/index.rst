@@ -10,7 +10,7 @@ Welcome to the documentation for the GradCafe Analytics Engine (Module 4).
 
    overview
    architecture
-   api_reference
+   api
    testing
 
 Indices and Tables
