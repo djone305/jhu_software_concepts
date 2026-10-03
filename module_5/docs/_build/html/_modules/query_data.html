@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>query_data &mdash; Grad Cafe ETL Pipeline  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Grad Cafe ETL Pipeline
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Grad Cafe ETL Pipeline</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">query_data</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for query_data</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_engine</span><span class="p">,</span> <span class="n">select</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">case</span><span class="p">,</span> <span class="n">or_</span><span class="p">,</span> <span class="n">and_</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">cast</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.orm</span><span class="w"> </span><span class="kn">import</span> <span class="n">sessionmaker</span>
+
+<span class="c1"># Import model definition from models.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Applicant</span>
+
+<span class="c1"># Load environment variables</span>
+<span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="n">DB_HOST</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"DB_HOST"</span><span class="p">,</span> <span class="s2">"localhost"</span><span class="p">)</span>
+<span class="n">DB_PORT</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"DB_PORT"</span><span class="p">,</span> <span class="s2">"5432"</span><span class="p">)</span>
+<span class="n">DB_NAME</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"DB_NAME"</span><span class="p">,</span> <span class="s2">"grad_admissions"</span><span class="p">)</span>
+<span class="n">DB_USER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"DB_USER"</span><span class="p">,</span> <span class="s2">"postgres"</span><span class="p">)</span>
+<span class="n">DB_PASSWORD</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"DB_PASSWORD"</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">DB_PASSWORD</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Missing database password! Set the DB_PASSWORD environment variable."</span><span class="p">)</span>
+
+<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"postgresql+psycopg2://</span><span class="si">{</span><span class="n">DB_USER</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">DB_PASSWORD</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">DB_HOST</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">DB_PORT</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">DB_NAME</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="n">DATABASE_URL</span><span class="p">)</span>
+<span class="n">SessionLocal</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">bind</span><span class="o">=</span><span class="n">engine</span><span class="p">)</span>
+
+
+<span class="c1"># --- Formatting Helpers ---</span>
+<div class="viewcode-block" id="format_count">
+<a class="viewcode-back" href="../api.html#query_data.format_count">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_count</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Formats a numeric value as a comma-separated integer string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        val (int or float or None): The raw numeric value.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The formatted integer string, or "0" if the value is None.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"0"</span></div>
+
+
+
+<div class="viewcode-block" id="format_percentage">
+<a class="viewcode-back" href="../api.html#query_data.format_percentage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_percentage</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Formats a numeric value as a two-decimal percentage string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        val (float or None): The raw decimal percentage.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The formatted percentage string (e.g., "52.51%"), or "0.00%" if None.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%"</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"0.00%"</span></div>
+
+
+
+<div class="viewcode-block" id="format_metric">
+<a class="viewcode-back" href="../api.html#query_data.format_metric">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_metric</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Formats a numeric value as a two-decimal floating point string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        val (float or None): The raw numeric metric (e.g., GPA).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The formatted float string, or "N/A" if the value is None.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"N/A"</span></div>
+
+
+
+<div class="viewcode-block" id="run_orm_queries">
+<a class="viewcode-back" href="../api.html#query_data.run_orm_queries">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_orm_queries</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Executes a suite of SQLAlchemy ORM queries to extract analytical insights </span>
+<span class="sd">    from the graduate admissions database, printing formatted results to standard output.</span>
+
+<span class="sd">    Queries executed include:</span>
+<span class="sd">        - Fall 2026 total applicant count.</span>
+<span class="sd">        - Average GPA of American Fall 2026 applicants.</span>
+<span class="sd">        - Acceptance rate for Fall 2025.</span>
+<span class="sd">        - PhD Computer Science acceptances (original vs LLM-generated comparison).</span>
+<span class="sd">        - Average GPA grouped by admission status.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    """</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">SessionLocal</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">" SQLAlchemy ORM Query Analysis Results"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="c1"># Question 1: Fall 2026 Applicants Count</span>
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Question 1 ---"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Question: How many entries in your database are from applicants who applied for Fall 2026?"</span><span class="p">)</span>
+        <span class="n">q1_stmt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">p_id</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">term</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'</span><span class="si">%F</span><span class="s1">all 2026%'</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">q1_result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="n">q1_stmt</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Fall 2026 applicant count: </span><span class="si">{</span><span class="n">format_count</span><span class="p">(</span><span class="n">q1_result</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="c1"># Question 4: Average GPA - American Fall 2026</span>
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Question 4 ---"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Question: What is the average GPA of American applicants who applied for Fall 2026?"</span><span class="p">)</span>
+        <span class="n">q4_stmt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">avg</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">gpa</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">and_</span><span class="p">(</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">term</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'</span><span class="si">%F</span><span class="s1">all 2026%'</span><span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">us_or_international</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%American%'</span><span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">gpa</span><span class="o">.</span><span class="n">is_not</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">q4_result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="n">q4_stmt</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Average GPA of American applicants (Fall 2026): </span><span class="si">{</span><span class="n">format_metric</span><span class="p">(</span><span class="n">q4_result</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="c1"># Question 5: Percentage Fall 2025 Acceptances</span>
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Question 5 ---"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Question: What percentage of Fall 2025 entries are acceptances?"</span><span class="p">)</span>
+        
+        <span class="n">total_fall_2025</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">nullif</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">p_id</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">accepted_count</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="k">case</span><span class="p">((</span><span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Accept%'</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="n">else_</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+        
+        <span class="n">q5_stmt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span>
+                <span class="n">cast</span><span class="p">(</span><span class="n">accepted_count</span><span class="p">,</span> <span class="n">Float</span><span class="p">)</span> <span class="o">*</span> <span class="mf">100.0</span> <span class="o">/</span> <span class="n">cast</span><span class="p">(</span><span class="n">total_fall_2025</span><span class="p">,</span> <span class="n">Float</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">term</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'</span><span class="si">%F</span><span class="s1">all 2025%'</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">q5_result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="n">q5_stmt</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Fall 2025 acceptance percentage: </span><span class="si">{</span><span class="n">format_percentage</span><span class="p">(</span><span class="n">q5_result</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="c1"># Question 8: 4 Universities - PhD CS Acceptances Fall 2026 (Original Fields)</span>
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Question 8 ---"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Question: How many Fall 2026 entries are acceptances for PhD Computer Science at Georgetown, MIT, Stanford, or CMU (original fields)?"</span><span class="p">)</span>
+        
+        <span class="n">target_unis</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'</span><span class="si">%G</span><span class="s1">eorgetown%'</span><span class="p">,</span> <span class="s1">'%Massachusetts Institute of Technology%'</span><span class="p">,</span> <span class="s1">'%MIT%'</span><span class="p">,</span> <span class="s1">'%Stanford%'</span><span class="p">,</span> <span class="s1">'%Carnegie Mellon%'</span><span class="p">,</span> <span class="s1">'%CMU%'</span><span class="p">]</span>
+        <span class="n">uni_conditions_q8</span> <span class="o">=</span> <span class="p">[</span><span class="n">Applicant</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">target_unis</span><span class="p">]</span>
+
+        <span class="n">q8_stmt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">p_id</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">and_</span><span class="p">(</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">term</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'</span><span class="si">%F</span><span class="s1">all 2026%'</span><span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Accept%'</span><span class="p">),</span>
+                    <span class="n">or_</span><span class="p">(</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">degree</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%PhD%'</span><span class="p">),</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">degree</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Ph.D%'</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Computer Science%'</span><span class="p">),</span>
+                    <span class="n">or_</span><span class="p">(</span><span class="o">*</span><span class="n">uni_conditions_q8</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">q8_result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="n">q8_stmt</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Original-field count: </span><span class="si">{</span><span class="n">format_count</span><span class="p">(</span><span class="n">q8_result</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="c1"># Question 9: 4 Universities - PhD CS Acceptances Fall 2026 (LLM Fields)</span>
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Question 9 ---"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Question: Repeat Question 8 using LLM-generated university and program fields."</span><span class="p">)</span>
+        
+        <span class="n">uni_conditions_q9</span> <span class="o">=</span> <span class="p">[</span><span class="n">Applicant</span><span class="o">.</span><span class="n">llm_generated_university</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">target_unis</span><span class="p">]</span>
+
+        <span class="n">q9_stmt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">p_id</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">and_</span><span class="p">(</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">term</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'</span><span class="si">%F</span><span class="s1">all 2026%'</span><span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Accept%'</span><span class="p">),</span>
+                    <span class="n">or_</span><span class="p">(</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">degree</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%PhD%'</span><span class="p">),</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">degree</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Ph.D%'</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">llm_generated_program</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Computer Science%'</span><span class="p">),</span>
+                    <span class="n">or_</span><span class="p">(</span><span class="o">*</span><span class="n">uni_conditions_q9</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">q9_result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="n">q9_stmt</span><span class="p">)</span>
+
+        <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">q9_result</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">q8_result</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">sign</span> <span class="o">=</span> <span class="s2">"+"</span> <span class="k">if</span> <span class="n">diff</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">""</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Original-field count: </span><span class="si">{</span><span class="n">format_count</span><span class="p">(</span><span class="n">q8_result</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"LLM-field count:      </span><span class="si">{</span><span class="n">format_count</span><span class="p">(</span><span class="n">q9_result</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Difference:           </span><span class="si">{</span><span class="n">sign</span><span class="si">}{</span><span class="n">diff</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="c1"># Custom Question 1: Average GPA by Admission Status (Fall 2026 PhDs)</span>
+        <span class="c1"># ---------------------------------------------------------</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Custom Question 1 ---"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Question: What is the average GPA of Fall 2026 PhD applicants, grouped by admission status?"</span><span class="p">)</span>
+        
+        <span class="n">normalized_status</span> <span class="o">=</span> <span class="n">case</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Accept%'</span><span class="p">),</span> <span class="s1">'Accepted'</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Reject%'</span><span class="p">),</span> <span class="s1">'Rejected'</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Wait%'</span><span class="p">),</span> <span class="s1">'Waitlisted'</span><span class="p">),</span>
+            <span class="n">else_</span><span class="o">=</span><span class="s1">'Other'</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'clean_status'</span><span class="p">)</span>
+
+        <span class="n">cq1_stmt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span>
+                <span class="n">normalized_status</span><span class="p">,</span>
+                <span class="n">func</span><span class="o">.</span><span class="n">avg</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">gpa</span><span class="p">)</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'avg_gpa'</span><span class="p">),</span>
+                <span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">Applicant</span><span class="o">.</span><span class="n">p_id</span><span class="p">)</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'total_applicants'</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">and_</span><span class="p">(</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">term</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'</span><span class="si">%F</span><span class="s1">all 2026%'</span><span class="p">),</span>
+                    <span class="n">or_</span><span class="p">(</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">degree</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%PhD%'</span><span class="p">),</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">degree</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Ph.D%'</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="n">Applicant</span><span class="o">.</span><span class="n">gpa</span><span class="o">.</span><span class="n">is_not</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+                    <span class="n">or_</span><span class="p">(</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Accept%'</span><span class="p">),</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Reject%'</span><span class="p">),</span>
+                        <span class="n">Applicant</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="s1">'%Wait%'</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">normalized_status</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="s1">'avg_gpa'</span><span class="p">))</span>
+        <span class="p">)</span>
+        
+        <span class="n">cq1_results</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cq1_stmt</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cq1_results</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Status: </span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">clean_status</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}</span><span class="s2"> | Average GPA: </span><span class="si">{</span><span class="n">format_metric</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">avg_gpa</span><span class="p">)</span><span class="si">}</span><span class="s2"> | Count: </span><span class="si">{</span><span class="n">format_count</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">total_applicants</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">run_orm_queries</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Donnell.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

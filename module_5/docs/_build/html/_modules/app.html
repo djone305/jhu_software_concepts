@@ -1,0 +1,283 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>app &mdash; Grad Cafe ETL Pipeline  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Grad Cafe ETL Pipeline
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Grad Cafe ETL Pipeline</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">app</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for app</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">flash</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">redirect</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">url_for</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">clean</span><span class="w"> </span><span class="kn">import</span> <span class="n">clean_scraped_records</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">load_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_scraped_data_to_db</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scrape</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_scrape</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="s2">"super-secret-key"</span>  <span class="c1"># Required for flash messages</span>
+
+<span class="c1"># Global pipeline execution state</span>
+<span class="n">task_status</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"is_running"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">"last_result"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"error"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="execute_etl_pipeline">
+<a class="viewcode-back" href="../api.html#app.execute_etl_pipeline">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">execute_etl_pipeline</span><span class="p">(</span><span class="n">record_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Asynchronous ETL Task that extracts, cleans, and loads data.</span>
+
+<span class="sd">    This function coordinates the full pipeline architecture:</span>
+<span class="sd">    1. Scrapes raw records using ``scrape.py``.</span>
+<span class="sd">    2. Cleans/standardizes records using ``clean.py``.</span>
+<span class="sd">    3. Persists records to PostgreSQL using ``load_data.py``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        record_limit (int, optional): The maximum number of new records to scrape. Defaults to 10.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None: Updates the global ``task_status`` dictionary in-place.</span>
+<span class="sd">    """</span>
+    <span class="k">global</span> <span class="n">task_status</span>
+    <span class="n">task_status</span><span class="p">[</span><span class="s2">"is_running"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">task_status</span><span class="p">[</span><span class="s2">"error"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"--- [STAGE 1/3] SCRAPING: Fetching up to </span><span class="si">{</span><span class="n">record_limit</span><span class="si">}</span><span class="s2"> new records ---"</span><span class="p">)</span>
+        <span class="n">raw_records</span> <span class="o">=</span> <span class="n">run_scrape</span><span class="p">(</span><span class="n">record_limit</span><span class="o">=</span><span class="n">record_limit</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Scraped </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">raw_records</span><span class="p">)</span><span class="si">}</span><span class="s2"> raw records."</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">raw_records</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"No new records retrieved by scraper."</span><span class="p">)</span>
+            <span class="n">task_status</span><span class="p">[</span><span class="s2">"last_result"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"No new records scraped."</span>
+            <span class="k">return</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"--- [STAGE 2/3] CLEANING: Processing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">raw_records</span><span class="p">)</span><span class="si">}</span><span class="s2"> records ---"</span><span class="p">)</span>
+        <span class="n">cleaned_records</span> <span class="o">=</span> <span class="n">clean_scraped_records</span><span class="p">(</span><span class="n">raw_records</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Successfully cleaned </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cleaned_records</span><span class="p">)</span><span class="si">}</span><span class="s2"> records."</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"--- [STAGE 3/3] LOADING: Inserting records into PostgreSQL ---"</span><span class="p">)</span>
+        <span class="n">inserted_count</span> <span class="o">=</span> <span class="n">load_scraped_data_to_db</span><span class="p">(</span><span class="n">cleaned_records</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pipeline complete! </span><span class="si">{</span><span class="n">inserted_count</span><span class="si">}</span><span class="s2"> new records added."</span><span class="p">)</span>
+
+        <span class="n">task_status</span><span class="p">[</span><span class="s2">"last_result"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Pipeline complete. Scraped, cleaned, and loaded </span><span class="si">{</span><span class="n">inserted_count</span><span class="si">}</span><span class="s2"> records."</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pipeline failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">task_status</span><span class="p">[</span><span class="s2">"error"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">task_status</span><span class="p">[</span><span class="s2">"is_running"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="fetch_database_metrics">
+<a class="viewcode-back" href="../api.html#app.fetch_database_metrics">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fetch_database_metrics</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Helper query runner to supply metric values to template rendering.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary of key database metrics, aggregations, and counts.</span>
+<span class="sd">    """</span>
+    <span class="c1"># Placeholders or real queries for your database analytics</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"q1"</span><span class="p">:</span> <span class="s2">"1,240"</span><span class="p">,</span>
+        <span class="s2">"q4"</span><span class="p">:</span> <span class="s2">"3.78"</span><span class="p">,</span>
+        <span class="s2">"q5"</span><span class="p">:</span> <span class="s2">"18.40%"</span><span class="p">,</span>
+        <span class="s2">"q8"</span><span class="p">:</span> <span class="s2">"42"</span><span class="p">,</span>
+        <span class="s2">"q9"</span><span class="p">:</span> <span class="s2">"58"</span><span class="p">,</span>
+        <span class="s2">"cq1"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Accepted"</span><span class="p">,</span> <span class="s2">"gpa"</span><span class="p">:</span> <span class="s2">"3.85"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">310</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Rejected"</span><span class="p">,</span> <span class="s2">"gpa"</span><span class="p">:</span> <span class="s2">"3.52"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">680</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Waitlisted"</span><span class="p">,</span> <span class="s2">"gpa"</span><span class="p">:</span> <span class="s2">"3.71"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">95</span><span class="p">},</span>
+        <span class="p">],</span>
+        <span class="s2">"cq2"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"American"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">540</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"International"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">700</span><span class="p">},</span>
+        <span class="p">],</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="index">
+<a class="viewcode-back" href="../api.html#app.index">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">index</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Main dashboard rendering route.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Renders the ``index.html`` template with injected database metrics and task status.</span>
+<span class="sd">    """</span>
+    <span class="n">metrics_data</span> <span class="o">=</span> <span class="n">fetch_database_metrics</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span>
+        <span class="s2">"index.html"</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">metrics_data</span><span class="p">,</span>
+        <span class="n">scraping_in_progress</span><span class="o">=</span><span class="n">task_status</span><span class="p">[</span><span class="s2">"is_running"</span><span class="p">],</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="update_analysis">
+<a class="viewcode-back" href="../api.html#app.update_analysis">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/update-analysis"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"POST"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_analysis</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Refreshes metrics based on database queries.</span>
+
+<span class="sd">    Matches form action ``url_for('update_analysis')``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        werkzeug.wrappers.Response: Redirects the user back to the index page.</span>
+<span class="sd">    """</span>
+    <span class="n">flash</span><span class="p">(</span><span class="s2">"Database analysis metrics refreshed."</span><span class="p">,</span> <span class="s2">"success"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s2">"index"</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="pull_data">
+<a class="viewcode-back" href="../api.html#app.pull_data">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/pull-data"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"POST"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pull_data</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Triggers the ETL task in a background daemon thread.</span>
+
+<span class="sd">    Matches form action ``url_for('pull_data')``. Reads the desired record limit from</span>
+<span class="sd">    the POST request form.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        werkzeug.wrappers.Response: Redirects the user back to the index page with a flash message.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">task_status</span><span class="p">[</span><span class="s2">"is_running"</span><span class="p">]:</span>
+        <span class="n">flash</span><span class="p">(</span><span class="s2">"Data retrieval is already in progress."</span><span class="p">,</span> <span class="s2">"warning"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s2">"index"</span><span class="p">))</span>
+
+    <span class="n">record_limit</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"record_limit"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">execute_etl_pipeline</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">record_limit</span><span class="p">,))</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="n">flash</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Background ETL pipeline initiated for </span><span class="si">{</span><span class="n">record_limit</span><span class="si">}</span><span class="s2"> records."</span><span class="p">,</span> <span class="s2">"info"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s2">"index"</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="get_pipeline_status">
+<a class="viewcode-back" href="../api.html#app.get_pipeline_status">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/pull-status"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_status</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Endpoint to inspect the background ETL process status.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON payload representing the global ``task_status`` dictionary.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">task_status</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span> 
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Donnell.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
